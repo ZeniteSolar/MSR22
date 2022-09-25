@@ -32,9 +32,6 @@
 #include "can_app.h"
 extern const uint8_t can_filter[];
 #endif // CAN_ON
-#ifdef UI_ON
-#include "ui.h"
-#endif // UI_ON
 
 typedef enum state_machine{
     STATE_INITIALIZING,
@@ -150,6 +147,5 @@ extern volatile uint8_t total_errors;           // Contagem de ERROS
 
 // other variables
 extern volatile uint8_t led_clk_div;
-extern volatile uint8_t ui_clk_div;
 
 #endif /* ifndef MACHINE_H */

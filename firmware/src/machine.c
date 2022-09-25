@@ -9,7 +9,6 @@ volatile uint8_t machine_clk;
 volatile uint8_t machine_clk_divider;
 volatile uint8_t total_errors;           // Contagem de ERROS
 volatile uint8_t led_clk_div;
-volatile uint8_t ui_clk_div;
 volatile state_machine_t state_machine;
 volatile system_flags_t system_flags;
 volatile error_flags_t error_flags;
@@ -150,22 +149,6 @@ inline void read_main_battery_voltage(void)
 
 #endif
 
-#ifdef UI_CHECK_MAIN_BATTERY_CELL_VOLTAGE
-	if(battery_voltage.main_cell_1 < BATTERY_CELL_DISCHARGED_VOLTAGE)
-		undervoltate.main_cell_1 = 1;
-	else
-		undervoltage.main_cell_1 = 0;
-
-	if(battery_voltage.main_cell_2 < BATTERY_CELL_DISCHARGED_VOLTAGE)	
-		undervoltage.main_cell_2 = 1;
-	else
-		undervoltate.main_cell_2 = 0;
-
-	if(battery_voltage.main_cell_3 < BATTERY_CELL_DISCHARGED_VOLTAGE)
-		undervoltage.main_cell_3 = 1;
-	else
-		undervoltage.main_cell_3 = 0;
-#endif
 }
 
 /**
@@ -182,11 +165,6 @@ inline void task_initializing(void)
 #ifdef CAN_ON
   VERBOSE_MSG_INIT(usart_send_string("System initialized without errors.\n"));
 #else
-#ifdef UI_ON
-  display_clear();
-  display_send_string("CAN", 7, 2, font_big);
-  display_send_string("OFF", 7, 5, font_big);
-#endif  /* UI_ON */
   VERBOSE_MSG_ERROR(usart_send_string("CAN module disable.\n"));
 #endif 
 
@@ -205,17 +183,8 @@ inline void task_idle(void)
     }
 #endif
 
-#if defined CAN_ON && defined UI_ON
-    
-    #if CAN_SIGNATURE_SELF == CAN_SIGNATURE_MVC19_1
-    ui_select_screen(VOLTAGE);
-    #elif CAN_SIGNATURE_SELF == CAN_SIGNATURE_MVC19_2
-    ui_select_screen(CURRENT);
-    #endif
-
+#if defined CAN_ON
     set_led(LED2);
-
-    ui_draw_layout();
     set_state_running();
 #endif
 }
@@ -232,18 +201,11 @@ inline void task_running(void)
     }
 #endif
 
-	if (I2C_ErrorCode){
+    // ToDo: observe serial status (usart & i2c)
+	/*if (I2C_ErrorCode){
 		set_state_reset();
-	}
+	}*/
 
-#ifdef UI_ON
-    if(++ui_clk_div == UI_UPDATE_CLK_DIV)
-    {
-        ui_clk_div = 0;
-	    read_main_battery_voltage();
-        ui_update();
-    }
-#endif
 }
 
 /**
