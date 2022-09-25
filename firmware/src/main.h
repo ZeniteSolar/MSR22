@@ -29,18 +29,6 @@
 #pragma message "USART: OFF!"
 #endif /*ifdef USART_ON*/
 
-#ifdef UI_ON
-#include "ui.h"
-#pragma message "UI: ON!"
-#ifdef PRIMARY_DISPLAY
-#pragma message "PRIMARY DISPLAY"
-#else
-#pragma message "SECONDARY DISPLAY"
-#endif /*PRIMARY_DISPLAY*/
-#else
-#pragma message "UI: OFF!"
-#endif /*ifdef UI_ON*/
-
 #ifdef CAN_ON
 #include "can.h"
 #include "can_filters.h"
