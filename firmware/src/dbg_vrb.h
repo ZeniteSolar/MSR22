@@ -52,11 +52,6 @@
 #define VERBOSE_MSG_MACHINE(x)
 #endif 
  
-#ifdef VERBOSE_ON_DISPLAY
-#define VERBOSE_MSG_DISPLAY_TEST(x) x
-#else
-#define VERBOSE_MSG_DISPLAY_TEST(x)
-#endif 
 
 #ifdef DEBUG_ON
 #define DEBUG_MSG(x) x

@@ -144,7 +144,6 @@ LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
 LDFLAGS += $(MATH_LIB)
 LDFLAGS += -static -Llib/avr-can-lib/src/ -lcan
 #LDFLAGS += -static -Llib/DISPLAYS/SSD1306_AVR/ -lssd1306
-LDFLAGS += -static -Llib/oled-display/ -loled-display
 
 ## Intel Hex file production flags
 HEX_FLASH_FLAGS = \

@@ -7,7 +7,7 @@
  *
  */
 #ifndef MAIN_H
-#define MAIN_H
+#define MAIN_H 
 
 #ifndef F_CPU
 #define F_CPU 16000000UL    ///< Frequency of CPU
@@ -37,7 +37,7 @@
 #pragma message "CAN: OFF!"
 #endif /*ifdef CAN_ON*/
 
-#ifdef ADC_ON
+#ifdef ADC_ON 
 #include "adc.h"
 #pragma message "ADC: ON!"
 #else
@@ -70,7 +70,5 @@
 #else
 #pragma message "SLEEP: OFF!"
 #endif /*ifdef SLEEP_ON*/
-
-void init(void);
 
 #endif /* ifndef MAIN_H */

@@ -16,70 +16,57 @@
 
 
 // CONFIGURACOES DE COMPILACAO
-#define DEBUG_ON
-// #define VERBOSE_ON
+//#define DEBUG_ON
+#define VERBOSE_ON
 //#define VERBOSE_ON_CAN_APP
 #define VERBOSE_ON_MACHINE
-//#define VERBOSE_ON_ADC
+#define VERBOSE_ON_ADC
 #define VERBOSE_ON_INIT
 #define VERBOSE_ON_ERROR
-#define VERBOSE_ON_DISPLAY
-
 
 // MODULES ACTIVATION
 #define USART_ON
-#define CAN_ON
-// #define CAN_DEPENDENT
-// #define ADC_ON
+// #define CAN_ON
+//#define CAN_DEPENDENT
+#define ADC_ON
 #define MACHINE_ON
 #define LED_ON
 #define WATCHDOG_ON
-// #define SLEEP_ON
+#define SLEEP_ON
+// #define PRINT_INFOS
 
-#define CAN_SIGNATURE_SELF                  CAN_SIGNATURE_MVC19_1
+#define CAN_SIGNATURE_SELF                  CAN_SIGNATURE_MSC19_4
 
 #ifdef ADC_ON
 // ADC CONFIGURATION
 // note that changing ADC_FREQUENCY may cause problems with avg_sum_samples
 #define ADC_FREQUENCY                       10000 // 20000
 #define ADC_TIMER_PRESCALER                 8
-#define ADC0_AVG                            adc.channel[ADC0].avg
-#define ADC0_ANGULAR_COEF                   10000 //(40000/((4/5)*1024))
-#define ADC0_LINEAR_COEF                    0
+#define AVG_BATTERY_VOLTAGE                 adc.channel[ADC0].avg
+#define AVG_ADC1_VOLTAGE                    adc.channel[ADC1].avg
+#define ADC_NOISE_VALUE                     10
+#define ADC_PANEL_VOLTAGE_ANGULAR_COEF      54937 //49776 //(40000/((4/5)*1024))
+//#define ADC_PANEL_VOLTAGE_LINEAR_COEF       0
+#define ADC_PANEL_CURRENT_ANGULAR_COEF      16337 //16985 //(16000/(((16*200*1500e-6)/5)*1024))
+//#define ADC_PANEL_CURRENT_LINEAR_COEF       0
+#define ADC_BATTERY_VOLTAGE_ANGULAR_COEF    65088 //65991 //~(60000/1024)
+//#define ADC_BATTERY_VOLTAGE_LINEAR_COEF     0
 #define ADC_AVG_SIZE_2                      7                  // in base 2
 #define ADC_AVG_SIZE_10                     128                // in base 10
-//#define FAKE_ADC_ON
-#ifdef FAKE_ADC_ON
-#define FAKE_ADC                            1
-#endif // FAKE_ADC_ON
 
 #endif //ADC_ON
 
-#define VSCALE				                100
-#define VSCALE_FLOAT			            100.f
-#define I_SCALE_FLOAT                       100.f
-
-
-// BATTERY INFORMATION
-#define BATTERY_CELL_DISCHARGED_VOLTAGE	    7.0 * VSCALE
-#define BATTERY_CELL_OVERCHARGED_VOLTAGE    15.6 * VSCALE
-#define BATTERY_SERIES_CELLS		        3
-#define BATTERY_BANK_DISCHARGED_VOLTAGE	    BATTERY_CELL_DISCHARGED_VOLTAGE * BATTERY_SERIES_CELLS
-#define BATTERY_BANK_OVERCHARGED_VOLTAGE    BATTERY_CELL_OVERCHARGED_VOLTAGE * BATTERY_SERIES_CELLS
-
 #ifdef MACHINE_ON
 // The machine frequency may not be superior of ADC_FREQUENCY/ADC_AVG_SIZE_10
-#define MACHINE_TIMER_FREQUENCY             120           //<! machine timer frequency in Hz
+#define MACHINE_TIMER_FREQUENCY             300           //<! machine timer frequency in Hz
 #define MACHINE_TIMER_PRESCALER             1024          //<! machine timer prescaler
-#ifdef ADC_ON
-#define MACHINE_CLK_DIVIDER_VALUE           ((uint64_t)(uint32_t)MACHINE_TIMER_FREQUENCY*(uint32_t)ADC_AVG_SIZE_10)/(ADC_FREQUENCY)           //<! machine_run clock divider
-#else
-#define MACHINE_CLK_DIVIDER_VALUE           1
-#endif // ADC_ON
-#define MACHINE_FREQUENCY                   (MACHINE_TIMER_FREQUENCY)/(MACHINE_CLK_DIVIDER_VALUE)
+
+// ----> Cbuf used + not a power module ---> no need for even numbers between ADC and Machine frequencies 
+// #define MACHINE_CLK_DIVIDER_VALUE           ((uint64_t)(uint32_t)MACHINE_TIMER_FREQUENCY*(uint32_t)ADC_AVG_SIZE_10)/(ADC_FREQUENCY)           //<! machine_run clock divider
+#define MACHINE_FREQUENCY                   (MACHINE_TIMER_FREQUENCY) //   /(MACHINE_CLK_DIVIDER_VALUE) 
 
 // SCALE TO CONVERT ADC DEFINITIONS
-//#define VSCALE                              (uint16_t)1000
+#define VSCALE                              (uint16_t)1000
 
 #endif // MACHINE_ON
 
@@ -93,9 +80,9 @@
 #define     set_led(y)              set_bit(LED_PORT, y)
 #define     clr_led(y)              clr_bit(LED_PORT, y)
 #else
-#define     cpl_led(y)
-#define     set_led(y)
-#define     clr_led(y)
+#define     cpl_led()
+#define     set_led()
+#define     clr_led()
 #endif // LED_ON
 
 
@@ -103,7 +90,6 @@
 #define SPI_ON
 #define CAN_APP_SEND_STATE_FREQ     40//36000     //<! state msg frequency in Hz
 #define CAN_APP_SEND_ADC_FREQ       4//6000      //<! adc msg frequency in Hz
-
 
 // CANBUS DEFINITONS
 // ----------------------------------------------------------------------------

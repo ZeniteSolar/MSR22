@@ -15,8 +15,6 @@
 #include <avr/io.h>
 #include <avr/wdt.h>
 
-void wdt_init(void);
-
 /**
  * @brief This function is called upon a HARDWARE RESET:
  */
