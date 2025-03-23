@@ -15,6 +15,7 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 
+void sleep_init(void);
 void sleep_init(void)
 {
 	set_sleep_mode(SLEEP_MODE_IDLE);
