@@ -6,9 +6,9 @@
  * @brief General configuration of the system.
  *
  */
-
+#include "../lib/log2.h"
 #ifndef CONF_H
-//#define CONF_H
+#define CONF_H
 
 #ifndef F_CPU
 #define F_CPU 16000000UL    //define a frequencia do microcontrolador - 16MHz
@@ -33,41 +33,61 @@
 #define LED_ON
 #define WATCHDOG_ON
 #define SLEEP_ON
-// #define PRINT_INFOS
+#define PRINT_INFOS
 
 #define CAN_SIGNATURE_SELF                  CAN_SIGNATURE_MSC19_4
 
 #ifdef ADC_ON
 // ADC CONFIGURATION
 // note that changing ADC_FREQUENCY may cause problems with avg_sum_samples
-#define ADC_FREQUENCY                       10000 // 20000
-#define ADC_TIMER_PRESCALER                 8
+// #define ADC_8BITS
+#define ADC_FREQUENCY                       5000 // 20000
+#define ADC_TIMER_PRESCALER                 128
+#define ADC_TOP_CTC                         F_CPU/(ADC_TIMER_PRESCALER * 2UL * ADC_FREQUENCY) -1
+
+#if ADC_TOP_CTC >= 256
+    #error "Value for ADC timer top is greater than 8 bits"
+#elif ADC_TOP_CTC < 2
+    #error "Value for ADC timer top is too low, increase the prescaler"
+#endif
+
 #define AVG_BATTERY_VOLTAGE                 adc.channel[ADC0].avg
 #define AVG_ADC1_VOLTAGE                    adc.channel[ADC1].avg
-#define ADC_NOISE_VALUE                     10
-#define ADC_PANEL_VOLTAGE_ANGULAR_COEF      54937 //49776 //(40000/((4/5)*1024))
-//#define ADC_PANEL_VOLTAGE_LINEAR_COEF       0
-#define ADC_PANEL_CURRENT_ANGULAR_COEF      16337 //16985 //(16000/(((16*200*1500e-6)/5)*1024))
-//#define ADC_PANEL_CURRENT_LINEAR_COEF       0
-#define ADC_BATTERY_VOLTAGE_ANGULAR_COEF    65088 //65991 //~(60000/1024)
-//#define ADC_BATTERY_VOLTAGE_LINEAR_COEF     0
-#define ADC_AVG_SIZE_2                      7                  // in base 2
-#define ADC_AVG_SIZE_10                     128                // in base 10
 
+/** @brief Circular buffer size definitions 
+ * Using equal size for adc structures...
+ * one could replicate the structure delacartion with different sizes
+ * or even, % TODO use dynamic allocation for strucutres 
+ */
+#define ADC_AVG_SIZE_10                     32
+#if (ADC_AVG_SIZE_10 == 0 || (ADC_AVG_SIZE_10 & (ADC_AVG_SIZE_10 - 1)) != 0)
+    #error "ADC_AVG_SIZE_10 must be a power of 2!"
+#endif
+#define cbuf_adc0_SIZE                      ADC_AVG_SIZE_10  /**< Buffer size for ADC0 */
+#define cbuf_adc0_SIZE_LOG2                 log2_function(cbuf_adc0_SIZE)   /**< Log2 of buffer size */
+#define cbuf_adc1_SIZE                      ADC_AVG_SIZE_10  /**< Buffer size for ADC1 */
+#define cbuf_adc1_SIZE_LOG2                 log2_function(cbuf_adc1_SIZE)    /**< Log2 of buffer size */
 #endif //ADC_ON
 
+
+
 #ifdef MACHINE_ON
-// The machine frequency may not be superior of ADC_FREQUENCY/ADC_AVG_SIZE_10
-#define MACHINE_TIMER_FREQUENCY             300           //<! machine timer frequency in Hz
+// ----> Cbuf used + not a power module ---> no need for even numbers between ADC and Machine frequencies
+// no need for clk divider 
+// #define MACHINE_CLK_DIVIDER_VALUE           ((uint64_t)(uint32_t)MACHINE_FREQUENCY*(uint32_t)ADC_AVG_SIZE_10)/(ADC_FREQUENCY)           //<! machine_run clock divider
+#define MACHINE_FREQUENCY                   100           //<! machine timer frequency in Hz
 #define MACHINE_TIMER_PRESCALER             1024          //<! machine timer prescaler
+#define MACHINE_TOP_CTC                     F_CPU/(MACHINE_TIMER_PRESCALER * 2UL * MACHINE_FREQUENCY) -1
+#if MACHINE_TOP_CTC >= 256
+    #error "Value for Machine timer top is greater than 8 bits"
+#elif MACHINE_TOP_CTC < 2
+    #error "Value for Machine timer top is too low, increase the prescaler"
+#endif
 
-// ----> Cbuf used + not a power module ---> no need for even numbers between ADC and Machine frequencies 
-// #define MACHINE_CLK_DIVIDER_VALUE           ((uint64_t)(uint32_t)MACHINE_TIMER_FREQUENCY*(uint32_t)ADC_AVG_SIZE_10)/(ADC_FREQUENCY)           //<! machine_run clock divider
-#define MACHINE_FREQUENCY                   (MACHINE_TIMER_FREQUENCY) //   /(MACHINE_CLK_DIVIDER_VALUE) 
-
-// SCALE TO CONVERT ADC DEFINITIONS
-#define VSCALE                              (uint16_t)1000
-
+// The machine frequency may not be superior of ADC_FREQUENCY/ADC_AVG_SIZE_10
+#if MACHINE_FREQUENCY > (ADC_FREQUENCY/ADC_AVG_SIZE_10)
+    #error "Machine runs faster than the required time to fill the ADC ring buffer"
+#endif
 #endif // MACHINE_ON
 
 #ifdef LED_ON
