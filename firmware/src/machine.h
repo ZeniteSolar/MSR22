@@ -16,9 +16,28 @@
 
 #include "conf.h"
 
-// Equations for mode 2 (CTC with TOP OCR2A)
-// Note the resolution. For example.. at 150hz, ICR1 = PWM_TOP = 159, so it
-#define MACHINE_TIMER_TOP ((F_CPU/(2*MACHINE_TIMER_PRESCALER))/(MACHINE_TIMER_FREQUENCY) -1)
+// limits of values
+
+// #define MA_PANEL_VOLTAGE        ma_adc0()
+// #define MA_PANEL_CURRENT        ma_adc1()
+#define MA_BATTERY_VOLTAGE      ma_adc0()
+// TODO Redefine after linearization process 
+#define MAXIMUM_BATTERY_VOLTAGE 46800 // 51,61 V  maximum value of voltage from battery in VOLTS
+#define MINIMUM_BATTERY_VOLTAGE 15000 // 15 V minimum value of voltage from battery in VOLTS
+#define CONVERSION_BATTERY_VOLTAGE_VALUE 1    //256 //400 
+
+// PRINT INFOS CONSTANTS
+#define PRINT_INFOS_TIME        0.2 // seconds for half a period 
+#define PRINT_INFOS_CLK_DIV     PRINT_INFOS_TIME * MACHINE_FREQUENCY
+
+// LED CONSTANTS
+#define IDLE_LED_TIME           1 // half a period...time that the LED stays on
+#define IDLE_LED_CLK_DIV        IDLE_LED_TIME * 2 * MACHINE_FREQUENCY //  
+#define RUNNING_LED_TIME        0.25 // half a period...time that the LED stays on
+#define RUNNING_LED_CLK_DIV     RUNNING_LED_TIME * 2 * MACHINE_FREQUENCY //  
+#define ERROR_LED_TIME          0.05 // half a period...time that the LED stays on
+#define ERROR_LED_CLK_DIV       ERROR_LED_TIME * 2 * MACHINE_FREQUENCY //  
+
 
 #ifdef ADC_ON
 #include "adc.h"
@@ -51,27 +70,28 @@ typedef union system_flags{
 typedef union error_flags{
     struct{
         uint8_t     no_canbus     :1;
+        uint8_t     overvoltage   :1;
     };
     uint8_t   all;
 }error_flags_t;
 
 typedef struct measurements{
-    uint16_t    adc0_avg;       // average value of ADC0
-    uint16_t    adc0_avg_sum_count;
-    uint64_t    adc0_avg_sum;   // average value of ADC0
-    uint16_t    adc0_min;       // period minimum value of ADC0
-    uint16_t    adc0_max;       // period maximum value of ADC0
+    uint16_t    bat_voltage;       // average value of ADC0
+    uint16_t    other_meas;       // average value of ADC0
 }measurements_t;
 
 
 // machine checks
 void check_buffers(void);
+void check_battery_voltage(void);
 void reset_measurements(void);
+void read_and_check_adcs(void);
 
 // debug functions
 void print_configurations(void);
 void print_system_flags(void);
 void print_error_flags(void);
+void print_infos(void);
 
 // machine tasks
 void task_initializing(void);
@@ -96,10 +116,10 @@ extern volatile system_flags_t system_flags;
 extern volatile error_flags_t error_flags;
 extern volatile measurements_t measurements;
 extern volatile uint8_t machine_clk;
-extern volatile uint8_t machine_clk_divider;
+extern volatile uint16_t machine_clk_divider;
 extern volatile uint8_t total_errors;           // Contagem de ERROS
 
 // other variables
-extern volatile uint8_t led_clk_div;
-
+extern volatile uint16_t led_clk_div;
+extern volatile uint16_t print_clk_div;
 #endif /* ifndef MACHINE_H */
