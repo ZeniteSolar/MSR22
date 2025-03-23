@@ -5,10 +5,10 @@ volatile system_flags_t system_flags;
 volatile error_flags_t error_flags;
 volatile measurements_t measurements;
 volatile uint8_t machine_clk;
-volatile uint8_t machine_clk_divider;
 volatile uint8_t total_errors;           // Contagem de ERROS
-volatile uint8_t led_clk_div;
-volatile uint8_t print_clk_div;
+volatile uint16_t machine_clk_divider;
+volatile uint16_t led_clk_div;
+volatile uint16_t print_clk_div;
 
 /**
  * @brief
@@ -42,7 +42,7 @@ void machine_init(void)
 #endif
                 | (0 << WGM22);      // mode 2
 
-    OCR2A = MACHINE_TIMER_TOP;                       // OCR2A = TOP = fcpu/(N*2*f) -1
+    OCR2A = MACHINE_TOP_CTC;                       // OCR2A = TOP = fcpu/(N*2*f) -1
 
     TIMSK2 |=   (1 << OCIE2A);                      // Activates interruption
 
@@ -96,6 +96,10 @@ inline void set_state_running(void)
 }
 
 /**
+#define MA_PANEL_VOLTAGE        ma_adc0()
+#define MA_PANEL_CURRENT        ma_adc1()
+#define MA_BATTERY_VOLTAGE      ma_adc2()
+
  * @brief set reset state
  */
 inline void set_state_reset(void)
@@ -113,8 +117,10 @@ inline void print_configurations(void)
 
     VERBOSE_MSG_MACHINE(usart_send_string("\nadc_f: "));
     VERBOSE_MSG_MACHINE(usart_send_uint16( ADC_FREQUENCY ));
-    VERBOSE_MSG_MACHINE(usart_send_char(','));
-    VERBOSE_MSG_MACHINE(usart_send_uint16( ADC_AVG_SIZE_10 ));
+    VERBOSE_MSG_MACHINE(usart_send_string(", adc0 size: "));
+    VERBOSE_MSG_MACHINE(usart_send_uint16( cbuf_adc0_SIZE ));
+    VERBOSE_MSG_MACHINE(usart_send_string(", adc1 size: "));
+    VERBOSE_MSG_MACHINE(usart_send_uint16( cbuf_adc0_SIZE ));
     VERBOSE_MSG_MACHINE(usart_send_string("\nmachine_f: "));
     VERBOSE_MSG_MACHINE(usart_send_uint16( MACHINE_FREQUENCY ));
 
@@ -139,6 +145,50 @@ inline void print_error_flags(void)
     //VERBOSE_MSG_MACHINE(usart_send_char(48+error_flags.no_canbus));
 }
 
+
+/**
+ * @brief checks if the voltage of Battery level is ok for running state
+ */
+inline void check_battery_voltage(void) // sem panel
+{
+   	if(measurements.bat_voltage >= MAXIMUM_BATTERY_VOLTAGE){
+	   	error_flags.overvoltage = 1;
+   	/*}else if(measurements.bat_voltage <= MINIMUM_BATTERY_VOLTAGE){
+		error_flags.undervoltage = 1; */
+	}else error_flags.overvoltage = 0; 
+}
+
+/**
+* @brief read and checks current levels
+*/
+inline void read_and_check_adcs(void)
+{ 
+#ifdef ADC_ON
+    // control.vi[0] = MA_PANEL_VOLTAGE * CONVERSION_PANEL_VOLTAGE_VALUE;
+    // control.ii[0] = MA_PANEL_CURRENT * CONVERSION_PANEL_CURRENT_VALUE;
+    measurements.bat_voltage = MA_BATTERY_VOLTAGE * CONVERSION_BATTERY_VOLTAGE_VALUE;
+
+    switch(state_machine){
+        case STATE_INITIALIZING:
+            check_battery_voltage();
+
+            break;
+        case STATE_IDLE:
+            check_battery_voltage();
+
+            break;
+        case STATE_RUNNING:
+            check_battery_voltage();
+
+            break;
+        default:
+            break;
+    } 
+#endif
+ 
+}
+
+
 /**
  * @brief Checks if the system is OK to run
  */
@@ -160,7 +210,7 @@ inline void task_initializing(void)
 inline void task_idle(void)
 {
 #ifdef LED_ON
-    if(led_clk_div++ >= 30){
+    if(led_clk_div++ >= IDLE_LED_CLK_DIV){
         cpl_led(LED1);
         led_clk_div = 0;
     }
@@ -177,7 +227,7 @@ inline void task_idle(void)
 inline void task_running(void)
 {
 #ifdef LED_ON
-    if(led_clk_div++ >= 2){
+    if(led_clk_div++ >= RUNNING_LED_CLK_DIV){
         cpl_led(LED1);
         led_clk_div = 0;
     }
@@ -191,7 +241,7 @@ inline void task_running(void)
 inline void task_error(void)
 {
 #ifdef LED_ON
-    if(led_clk_div++ >= 5){
+    if(led_clk_div++ >= ERROR_LED_CLK_DIV){
         cpl_led(LED2);
         set_led(LED1);
         led_clk_div = 0;
@@ -246,15 +296,15 @@ void print_infos(void)
 {
 	static uint8_t i = 0;
 
-    if(print_clk_div++ >= 2){
+    if(print_clk_div++ >= PRINT_INFOS_CLK_DIV){
         print_clk_div = 0;
-        usart_send_string("X ");
-    
+        usart_send_string("\ntestando: ");
+        usart_send_uint16(measurements.bat_voltage);
         switch (i++)
         {
         case 0:
             // usart_send_string("\ntestando: ");
-            // usart_send_float(measurements.adc0_avg);
+            // usart_send_float(measurements.bat_voltage);
             break;
         case 1:
             break;
@@ -268,14 +318,6 @@ void print_infos(void)
     }
 }
 
-inline void reset_measurements(void)
-{
-    measurements.adc0_avg_sum_count = 0;
-    measurements.adc0_avg_sum = 0;
-    measurements.adc0_max = 0;
-    measurements.adc0_min = 1023;
-}
-
 /**
  * @brief this is the machine state itself.
  */
@@ -286,56 +328,39 @@ inline void machine_run(void)
         
         machine_clk = 0;
     #ifdef ADC_ON
-        if(adc.ready){
-            adc.ready = 0;
+        if(adc_data_ready){
+            adc_data_ready = 0;
+            read_and_check_adcs();
+        } 
 
-            measurements.adc0_avg = ADC0_AVG;
-                //* ADC0_ANGULAR_COEF
-                //+ ADC0_LINEAR_COEF;
+        switch(state_machine){
+            case STATE_INITIALIZING:
+                task_initializing();
 
-            if(measurements.adc0_avg < measurements.adc0_min)
-                measurements.adc0_min = measurements.adc0_avg;
-            if(measurements.adc0_avg > measurements.adc0_max)
-                measurements.adc0_max = measurements.adc0_avg;
+                break;
+            case STATE_IDLE:
+                task_idle();
 
-            measurements.adc0_avg_sum_count++;
-            measurements.adc0_avg_sum += measurements.adc0_avg;
+                break;
+            case STATE_RUNNING:
+                task_running();
+                #ifdef PRINT_INFOS
+                    print_infos();
+                #endif /* PRINT_INFOS */
+                #ifdef CAN_ON
+                    can_app_task();
+                #endif /* CAN_ON */
 
-            // if(error_flags.all){
-            //     print_system_flags();
-            //     print_error_flags();
-            //     print_infos();
-            //     set_state_error();
-            // }
+                break;
+            case STATE_ERROR:
+                task_error();
 
-            switch(state_machine){
-                case STATE_INITIALIZING:
-                    task_initializing();
-
-                    break;
-                case STATE_IDLE:
-                    task_idle();
-
-                    break;
-                case STATE_RUNNING:
-                    task_running();
-                    #ifdef PRINT_INFOS
-                        print_infos();
-                    #endif /* PRINT_INFOS */
-                    #ifdef CAN_ON
-                        can_app_task();
-                    #endif /* CAN_ON */
-
-                    break;
-                case STATE_ERROR:
-                    task_error();
-
-                case STATE_RESET:
-                default:
-                    task_reset();
-                    break;
-            }
+            case STATE_RESET:
+            default:
+                task_reset();
+                break;
         }
+    
     #endif /* ADC_ON */
     }
 }
@@ -345,14 +370,19 @@ inline void machine_run(void)
 */
 ISR(TIMER2_COMPA_vect)
 {
-    if(machine_clk_divider++ == MACHINE_CLK_DIVIDER_VALUE){
-        /*if(machine_clk){
-            for(;;){
-                pwm_reset();
-                VERBOSE_MSG_ERROR(if(machine_clk) usart_send_string("\nERROR: CLOCK CONFLICT!!!\n"));
-            }
-        }*/
-        machine_clk = 1;
-        machine_clk_divider = 0;
-    }
+    #ifdef MACHINE_CLK_DIVIDER_VALUE
+        if(machine_clk_divider++ == MACHINE_CLK_DIVIDER_VALUE){
+            /*if(machine_clk){
+                for(;;){
+                    pwm_reset();
+                    VERBOSE_MSG_ERROR(if(machine_clk) usart_send_string("\nERROR: CLOCK CONFLICT!!!\n"));
+                }
+            }*/
+            machine_clk = 1;
+            machine_clk_divider = 0;
+        }
+    #else
+    // VERBOSE_MSG_ERROR(if(machine_clk) usart_send_string("\nERROR: CLOCK CONFLICT!!!\n"));
+	machine_clk = 1;
+    #endif
 }
