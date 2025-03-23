@@ -8,6 +8,7 @@
  *
  */
 
+#include <stdint.h>
 #ifndef _LOG2_H_
 #define _LOG2_H_
 
@@ -19,12 +20,13 @@
  * @param[out] r is the output from log2(n)
  */
 #define log2(r,n)   while((n)>>=1)(r)++;
-// to implement as a C function:
-/*inline uint8_t log2(uint8_t n)
+
+// C function implementation to use for macros:
+static inline uint8_t log2_function(uint8_t n)
 {            
     uint8_t r = 0;
     while (n >>= 1) r++;
     return r;
-}*/
+}
 
 #endif
