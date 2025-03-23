@@ -71,4 +71,6 @@
 #pragma message "SLEEP: OFF!"
 #endif /*ifdef SLEEP_ON*/
 
+void init(void);
+
 #endif /* ifndef MAIN_H */
