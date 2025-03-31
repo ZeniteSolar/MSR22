@@ -13,17 +13,17 @@ volatile uint16_t avg_adc1;
 volatile adc_cbuf_adc0_t cbuf_adc0;
 volatile adc_cbuf_adc1_t cbuf_adc1;
 
+volatile uint16_t adc_debug_clk_div = 0; 
+
 // Coefficients for linearization, example coefficients
-static const int16_t adc0_a = 1;   
-static const int16_t adc0_b = 2;
-static const int16_t adc0_c = 3;
-static const int16_t adc1_a = 1;   
-static const int16_t adc1_b = 2;
-static const int16_t adc1_c = 3;
+static const int32_t adc0_a = (int32_t)(-1.12162388e-06 * VSCALE_FACTOR * 100000);  // -0.0112 ≈ -11
+static const int32_t adc0_b = (int32_t)(4.25139124e-02 * VSCALE_FACTOR);           // 425
+static const int32_t adc0_c = (int32_t)(9.74947993e-02 * VSCALE_FACTOR);           // 975
+static const int32_t adc1_a = 1;   
+static const int32_t adc1_b = 1;
+static const int32_t adc1_c = 1;
 
 // Define the linearization polynomial as a macro or function
-#define LINEARIZE_ADC0(x) ((adc0_a * (x) * (x)) + (adc0_b * (x)) + adc0_c)
-#define LINEARIZE_ADC1(x) ((adc1_a * (x) * (x)) + (adc1_b * (x)) + adc1_c)
 
 /**
  * @brief initializes all adc circular buffers.
@@ -32,6 +32,20 @@ void init_buffers(void)
 {
     CBUF_Init(cbuf_adc0);
     CBUF_Init(cbuf_adc1);
+}
+
+/**
+ * @brief Linearize adcs 
+ */
+static inline uint16_t linearize_adc(uint16_t x, int32_t a, int32_t b, int32_t c) {
+    int32_t result;
+
+    result = (a * (int32_t)x / 100000) * (int32_t)x ;
+    result /= 100;  // Keep two decimal places
+    result += (b * (int32_t)x)/100 + c/100;
+    result /= 1;  // Keep two decimal places
+
+    return (uint16_t) result;
 }
 
 /**
@@ -50,7 +64,8 @@ uint16_t ma_adc0(void)
     uint16_t sum = 0;
     for (uint8_t i = cbuf_adc0_SIZE; i; i--) {
         uint16_t raw_value = CBUF_Get(cbuf_adc0, i);
-        uint16_t linearized_value = LINEARIZE_ADC0(raw_value);  // Apply polynomial
+        // sum += raw_value;
+        uint16_t linearized_value = linearize_adc(raw_value, adc0_a, adc0_b, adc0_c);  // Apply polynomial
         sum += linearized_value;
     }
     avg_adc0 = sum >> cbuf_adc0_SIZE_LOG2;
@@ -73,7 +88,7 @@ uint16_t ma_adc1(void)
     uint16_t sum = 0;
     for (uint8_t i = cbuf_adc1_SIZE; i; i--) {
         uint16_t raw_value = CBUF_Get(cbuf_adc1, i);
-        uint16_t linearized_value = LINEARIZE_ADC1(raw_value);  // Apply polynomial
+        uint16_t linearized_value = linearize_adc(raw_value,adc1_a,adc1_b,adc1_c);  // Apply polynomial
         sum += linearized_value;
     }
     avg_adc1 = sum >> cbuf_adc1_SIZE_LOG2;
@@ -167,8 +182,16 @@ void adc_init(void)
 ISR(ADC_vect){
     switch(ADC_CHANNEL){
         case ADC0:
-            // VERBOSE_MSG_ADC(usart_send_string(" \tadc0: "));
-            // VERBOSE_MSG_ADC(usart_send_uint16(ADC));
+            if(adc_debug_clk_div++ >= ADC_DEBUG_CLK_DIV){
+                #ifdef ADC_8BITS
+                    VERBOSE_MSG_ADC(usart_send_uint8(ADCH));
+                    VERBOSE_MSG_ADC(usart_send_char('\n'));
+                #else
+                    VERBOSE_MSG_ADC(usart_send_uint16(ADC));
+                    VERBOSE_MSG_ADC(usart_send_char('\n'));
+                #endif
+                adc_debug_clk_div = 0;
+            }   
 #ifdef ADC_8BITS
             CBUF_Push(cbuf_adc0, ADCH); 
 #else
@@ -185,23 +208,15 @@ ISR(ADC_vect){
 #endif
             // ADC_CHANNEL++;
             
-            // Explicitly calling shared code instead of falling through
-            // __attribute__((fallthrough));
             // Last channel logic 
-            ADC_CHANNEL = ADC0; // reset to first channel
             adc_data_ready = 1; // Moving this into default might cause a false positive flag
             // VERBOSE_MSG_ADC(usart_send_string("\n"));
-            break;
+            // Explicitly calling shared code instead of falling through
+            __attribute__((fallthrough));
         default:
-            ADC_CHANNEL = ADC0;
+            ADC_CHANNEL = ADC0; // reset to first channel
             break;
-    }        
-#ifdef ADC_8BITS
-    VERBOSE_MSG_ADC(usart_send_uint8(ADCH));
-#else
-    VERBOSE_MSG_ADC(usart_send_uint16(ADC));
-    VERBOSE_MSG_ADC(usart_send_char('\n'));
-#endif
+    }
     adc_select_channel(ADC_CHANNEL);
 }
  
