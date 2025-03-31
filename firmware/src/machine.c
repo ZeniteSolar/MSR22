@@ -96,12 +96,11 @@ inline void set_state_running(void)
 }
 
 /**
-#define MA_PANEL_VOLTAGE        ma_adc0()
-#define MA_PANEL_CURRENT        ma_adc1()
-#define MA_BATTERY_VOLTAGE      ma_adc2()
-
  * @brief set reset state
  */
+
+ 
+
 inline void set_state_reset(void)
 {
     VERBOSE_MSG_MACHINE(usart_send_string("\n>>>RESET STATE\n"));
@@ -146,6 +145,10 @@ inline void print_error_flags(void)
 }
 
 
+#define MA_PANEL_VOLTAGE        ma_adc0()
+#define MA_PANEL_CURRENT        ma_adc1()
+
+
 /**
  * @brief checks if the voltage of Battery level is ok for running state
  */
@@ -166,7 +169,7 @@ inline void read_and_check_adcs(void)
 #ifdef ADC_ON
     // control.vi[0] = MA_PANEL_VOLTAGE * CONVERSION_PANEL_VOLTAGE_VALUE;
     // control.ii[0] = MA_PANEL_CURRENT * CONVERSION_PANEL_CURRENT_VALUE;
-    measurements.bat_voltage = MA_BATTERY_VOLTAGE * CONVERSION_BATTERY_VOLTAGE_VALUE;
+    measurements.bat_voltage = MA_BATTERY_VOLTAGE; //* CONVERSION_BATTERY_VOLTAGE_VALUE;
 
     switch(state_machine){
         case STATE_INITIALIZING:
@@ -354,8 +357,9 @@ inline void machine_run(void)
                 break;
             case STATE_ERROR:
                 task_error();
-
+                break;
             case STATE_RESET:
+                __attribute__((fallthrough));
             default:
                 task_reset();
                 break;
