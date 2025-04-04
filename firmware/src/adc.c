@@ -16,12 +16,10 @@ volatile adc_cbuf_adc1_t cbuf_adc1;
 volatile uint16_t adc_debug_clk_div = 0; 
 
 // Coefficients for linearization, example coefficients
-static const int32_t adc0_a = (int32_t)(-1.12162388e-06 * VSCALE_FACTOR * 100000);  // -0.0112 ≈ -11
-static const int32_t adc0_b = (int32_t)(4.25139124e-02 * VSCALE_FACTOR);           // 425
-static const int32_t adc0_c = (int32_t)(9.74947993e-02 * VSCALE_FACTOR);           // 975
+static const int32_t adc0_a = 4;   // 0.04205947 * 100 ≈ 4
+static const int32_t adc0_b = 13;  // 0.12829264 * 100 ≈ 13
 static const int32_t adc1_a = 1;   
 static const int32_t adc1_b = 1;
-static const int32_t adc1_c = 1;
 
 // Define the linearization polynomial as a macro or function
 
@@ -37,13 +35,10 @@ void init_buffers(void)
 /**
  * @brief Linearize adcs 
  */
-static inline uint16_t linearize_adc(uint16_t x, int32_t a, int32_t b, int32_t c) {
-    int32_t result;
+static inline uint16_t linearize_adc(uint16_t x, int32_t a, int32_t b) {
+    uint16_t result;
 
-    result = (a * (int32_t)x / 100000) * (int32_t)x ;
-    result /= 100;  // Keep two decimal places
-    result += (b * (int32_t)x)/100 + c/100;
-    result /= 1;  // Keep two decimal places
+    result = (a * x);
 
     return (uint16_t) result;
 }
@@ -64,8 +59,7 @@ uint16_t ma_adc0(void)
     uint16_t sum = 0;
     for (uint8_t i = cbuf_adc0_SIZE; i; i--) {
         uint16_t raw_value = CBUF_Get(cbuf_adc0, i);
-        // sum += raw_value;
-        uint16_t linearized_value = linearize_adc(raw_value, adc0_a, adc0_b, adc0_c);  // Apply polynomial
+        uint16_t linearized_value = linearize_adc(raw_value, adc0_a, adc0_b);  // Apply polynomial
         sum += linearized_value;
     }
     avg_adc0 = sum >> cbuf_adc0_SIZE_LOG2;
@@ -85,10 +79,10 @@ uint8_t ma_adc1(void)
 uint16_t ma_adc1(void)
 #endif
 {
-    uint16_t sum = 0;
+    uint32_t sum = 0;
     for (uint8_t i = cbuf_adc1_SIZE; i; i--) {
         uint16_t raw_value = CBUF_Get(cbuf_adc1, i);
-        uint16_t linearized_value = linearize_adc(raw_value,adc1_a,adc1_b,adc1_c);  // Apply polynomial
+        uint16_t linearized_value = linearize_adc(raw_value,adc1_a,adc1_b);  // Apply polynomial
         sum += linearized_value;
     }
     avg_adc1 = sum >> cbuf_adc1_SIZE_LOG2;
@@ -137,21 +131,17 @@ void adc_init(void)
     ADCSRA  =   (1 << ADATE)    // ADC Auto Trigger Enable
           | (1 << ADIE)     // ADC Interrupt Enable
           | (1 << ADEN)     // ADC Enable
-          | (1 << ADSC)     // Do the first Start of Conversion
-#if ADC_TIMER_PRESCALER == 2
-          | (0 << ADPS2) | (0 << ADPS1) | (1 << ADPS0)  // Prescaler N=2
-#elif ADC_TIMER_PRESCALER == 4
-          | (0 << ADPS2) | (1 << ADPS1) | (0 << ADPS0)  // Prescaler N=4
+          | (1 << ADSC)     // Do the first Start of Conversion 
+#if ADC_TIMER_PRESCALER == 1
+          | (0 << ADPS2) | (0 << ADPS1) | (1 << ADPS0)  // Prescaler N=1
 #elif ADC_TIMER_PRESCALER == 8
-          | (0 << ADPS2) | (1 << ADPS1) | (1 << ADPS0)  // Prescaler N=8
-#elif ADC_TIMER_PRESCALER == 16
-          | (1 << ADPS2) | (0 << ADPS1) | (0 << ADPS0)  // Prescaler N=16
-#elif ADC_TIMER_PRESCALER == 32
-          | (1 << ADPS2) | (0 << ADPS1) | (1 << ADPS0)  // Prescaler N=32
+          | (0 << ADPS2) | (1 << ADPS1) | (0 << ADPS0)  // Prescaler N=8
 #elif ADC_TIMER_PRESCALER == 64
-          | (1 << ADPS2) | (1 << ADPS1) | (0 << ADPS0)  // Prescaler N=64
-#elif ADC_TIMER_PRESCALER == 128
-          | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0)  // Prescaler N=128
+          | (0 << ADPS2) | (1 << ADPS1) | (1 << ADPS0)  // Prescaler N=64
+#elif ADC_TIMER_PRESCALER == 256
+          | (1 << ADPS2) | (0 << ADPS1) | (0 << ADPS0)  // Prescaler N=1256
+#elif ADC_TIMER_PRESCALER == 1024
+          | (1 << ADPS2) | (0 << ADPS1) | (1 << ADPS0)  // Prescaler N=1024
 #else
           | (1 << ADPS1) | (1 << ADPS0)  // Default to N=8 if no valid prescaler is set
 #endif
@@ -212,7 +202,8 @@ ISR(ADC_vect){
             adc_data_ready = 1; // Moving this into default might cause a false positive flag
             // VERBOSE_MSG_ADC(usart_send_string("\n"));
             // Explicitly calling shared code instead of falling through
-            __attribute__((fallthrough));
+            // __attribute__((fallthrough));
+            ADC_CHANNEL++;
         default:
             ADC_CHANNEL = ADC0; // reset to first channel
             break;
