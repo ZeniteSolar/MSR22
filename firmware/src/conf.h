@@ -20,7 +20,7 @@
 #define VERBOSE_ON
 //#define VERBOSE_ON_CAN_APP
 #define VERBOSE_ON_MACHINE
-#define VERBOSE_ON_ADC
+// #define VERBOSE_ON_ADC
 #define VERBOSE_ON_INIT
 #define VERBOSE_ON_ERROR
 
@@ -41,8 +41,8 @@
 // ADC CONFIGURATION
 // note that changing ADC_FREQUENCY may cause problems with avg_sum_samples
 // #define ADC_8BITS
-#define ADC_FREQUENCY                       5000 // 20000
-#define ADC_TIMER_PRESCALER                 128
+#define ADC_FREQUENCY                       10000 // 20000
+#define ADC_TIMER_PRESCALER                 64
 #define ADC_TOP_CTC                         F_CPU/(ADC_TIMER_PRESCALER * 2UL * ADC_FREQUENCY) -1
 
 #if ADC_TOP_CTC >= 256
@@ -53,13 +53,14 @@
 
 #define AVG_BATTERY_VOLTAGE                 adc.channel[ADC0].avg
 #define AVG_ADC1_VOLTAGE                    adc.channel[ADC1].avg
+// #define VSCALE_FACTOR                       10000L  // Scaling to maintain precision, result uint16 for can msg
 
 /** @brief Circular buffer size definitions 
  * Using equal size for adc structures...
  * one could replicate the structure delacartion with different sizes
  * or even, % TODO use dynamic allocation for strucutres 
  */
-#define ADC_AVG_SIZE_10                     32
+#define ADC_AVG_SIZE_10                     64
 #if (ADC_AVG_SIZE_10 == 0 || (ADC_AVG_SIZE_10 & (ADC_AVG_SIZE_10 - 1)) != 0)
     #error "ADC_AVG_SIZE_10 must be a power of 2!"
 #endif
