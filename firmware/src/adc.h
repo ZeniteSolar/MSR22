@@ -29,13 +29,13 @@
 /** @brief Flag indicating new ADC data is available */
 extern volatile uint8_t adc_data_ready;
 extern volatile uint16_t adc_debug_clk_div;
-#define ADC_DEBUG_CLK_DIV   (0.1 * ADC_FREQUENCY)  // Time to print(s) * (1/(ADC period (s))
+#define ADC_DEBUG_CLK_DIV   (0.5 * ADC_FREQUENCY)  // Time to print(s) * (1/(ADC period (s))
 
 /** 
  * @brief ADC channel selection enum
  */
 typedef enum {
-    ADC0, ADC1, ADC2, ADC3, ADC4, ADC5
+    ADC0, ADC1
 } adc_channels_t;
 
 /** @brief Currently selected ADC channel */

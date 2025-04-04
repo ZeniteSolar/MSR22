@@ -51,8 +51,6 @@
     #error "Value for ADC timer top is too low, increase the prescaler"
 #endif
 
-#define AVG_BATTERY_VOLTAGE                 adc.channel[ADC0].avg
-#define AVG_ADC1_VOLTAGE                    adc.channel[ADC1].avg
 // #define VSCALE_FACTOR                       10000L  // Scaling to maintain precision, result uint16 for can msg
 
 /** @brief Circular buffer size definitions 

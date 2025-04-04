@@ -16,10 +16,10 @@ volatile adc_cbuf_adc1_t cbuf_adc1;
 volatile uint16_t adc_debug_clk_div = 0; 
 
 // Coefficients for linearization, example coefficients
-static const int32_t adc0_a = 4;   // 0.04205947 * 100 ≈ 4
-static const int32_t adc0_b = 13;  // 0.12829264 * 100 ≈ 13
-static const int32_t adc1_a = 1;   
-static const int32_t adc1_b = 1;
+static const int16_t adc0_a = 42;   // 0.04205947 * 100 ≈ 4
+static const int16_t adc0_b = 1;  // 0.12829264 * 100 ≈ 13
+static const int16_t adc1_a = 1;   
+static const int16_t adc1_b = 1;
 
 // Define the linearization polynomial as a macro or function
 
@@ -35,12 +35,12 @@ void init_buffers(void)
 /**
  * @brief Linearize adcs 
  */
-static inline uint16_t linearize_adc(uint16_t x, int32_t a, int32_t b) {
+static inline uint16_t linearize_adc(uint16_t x, int16_t a, int16_t b) {
     uint16_t result;
 
-    result = (a * x);
+    result = a * x;
 
-    return (uint16_t) result;
+    return result;
 }
 
 /**
@@ -56,12 +56,17 @@ uint8_t ma_adc0(void)
 uint16_t ma_adc0(void)
 #endif
 {
-    uint16_t sum = 0;
+    uint32_t sum = 0;
     for (uint8_t i = cbuf_adc0_SIZE; i; i--) {
         uint16_t raw_value = CBUF_Get(cbuf_adc0, i);
         uint16_t linearized_value = linearize_adc(raw_value, adc0_a, adc0_b);  // Apply polynomial
         sum += linearized_value;
     }
+    if(adc_debug_clk_div++ >= ADC_DEBUG_CLK_DIV/50){
+        usart_send_string("\ntestando SUM: ");
+        usart_send_uint16(sum);
+        adc_debug_clk_div = 0;
+    } 
     avg_adc0 = sum >> cbuf_adc0_SIZE_LOG2;
     return avg_adc0;
 }
@@ -82,7 +87,7 @@ uint16_t ma_adc1(void)
     uint32_t sum = 0;
     for (uint8_t i = cbuf_adc1_SIZE; i; i--) {
         uint16_t raw_value = CBUF_Get(cbuf_adc1, i);
-        uint16_t linearized_value = linearize_adc(raw_value,adc1_a,adc1_b);  // Apply polynomial
+        uint16_t linearized_value = linearize_adc(raw_value, adc1_a, adc1_b);  // Apply polynomial
         sum += linearized_value;
     }
     avg_adc1 = sum >> cbuf_adc1_SIZE_LOG2;
@@ -127,7 +132,10 @@ void adc_init(void)
             | (1 << ADTS1)
             | (1 << ADTS0);
 
-    adc_select_channel(ADC1);                       // Choose admux
+    init_buffers();
+    // adc_select_channel(ADC0);                       // Choose admux
+    ADMUX = (ADMUX & 0xF8) | 0;                       // Atribuindo canal
+    
     ADCSRA  =   (1 << ADATE)    // ADC Auto Trigger Enable
           | (1 << ADIE)     // ADC Interrupt Enable
           | (1 << ADEN)     // ADC Enable
@@ -162,8 +170,6 @@ void adc_init(void)
 	OCR0A  =    ADC_TOP_CTC;
     TIMSK0 |=   (1 << OCIE0A);                      // Ativa a interrupcao na igualdade de comparação do TC0 com OCR0A
 
-    init_buffers();
-
 }
 
 /**
@@ -171,17 +177,7 @@ void adc_init(void)
  */
 ISR(ADC_vect){
     switch(ADC_CHANNEL){
-        case ADC0:
-            if(adc_debug_clk_div++ >= ADC_DEBUG_CLK_DIV){
-                #ifdef ADC_8BITS
-                    VERBOSE_MSG_ADC(usart_send_uint8(ADCH));
-                    VERBOSE_MSG_ADC(usart_send_char('\n'));
-                #else
-                    VERBOSE_MSG_ADC(usart_send_uint16(ADC));
-                    VERBOSE_MSG_ADC(usart_send_char('\n'));
-                #endif
-                adc_debug_clk_div = 0;
-            }   
+        case ADC0: 
 #ifdef ADC_8BITS
             CBUF_Push(cbuf_adc0, ADCH); 
 #else
@@ -191,24 +187,32 @@ ISR(ADC_vect){
             break;
         case ADC1:
             // VERBOSE_MSG_ADC(usart_send_string(" \tadc1: "));
-#ifdef ADC_8BITS
+#ifdef ADC_8BITS2
             CBUF_Push(cbuf_adc1, ADCH); 
 #else
             CBUF_Push(cbuf_adc1, ADC); 
 #endif
-            // ADC_CHANNEL++;
-            
             // Last channel logic 
             adc_data_ready = 1; // Moving this into default might cause a false positive flag
-            // VERBOSE_MSG_ADC(usart_send_string("\n"));
-            // Explicitly calling shared code instead of falling through
-            // __attribute__((fallthrough));
-            ADC_CHANNEL++;
+            __attribute__((fallthrough)); // Explicitly calling shared code instead of falling through
         default:
             ADC_CHANNEL = ADC0; // reset to first channel
             break;
     }
-    adc_select_channel(ADC_CHANNEL);
+    // adc_select_channel(ADC_CHANNEL);
+    ADMUX = (ADMUX & 0xF8) | ADC_CHANNEL;
+
+
+    // if(adc_debug_clk_div++ >= ADC_DEBUG_CLK_DIV){
+        // #ifdef ADC_8BITS
+            // VERBOSE_MSG_ADC(usart_send_uint8(ADCH));
+            // VERBOSE_MSG_ADC(usart_send_char('\n'));
+        // #else
+            // VERBOSE_MSG_ADC(usart_send_uint16(ADC));
+            // VERBOSE_MSG_ADC(usart_send_char('\n'));
+        // #endif
+        // adc_debug_clk_div = 0;
+    // }  
 }
  
 /**

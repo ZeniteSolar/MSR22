@@ -167,8 +167,6 @@ inline void check_battery_voltage(void) // sem panel
 inline void read_and_check_adcs(void)
 { 
 #ifdef ADC_ON
-    // control.vi[0] = MA_PANEL_VOLTAGE * CONVERSION_PANEL_VOLTAGE_VALUE;
-    // control.ii[0] = MA_PANEL_CURRENT * CONVERSION_PANEL_CURRENT_VALUE;
     measurements.bat_voltage = MA_BATTERY_VOLTAGE; //* CONVERSION_BATTERY_VOLTAGE_VALUE;
 
     switch(state_machine){
