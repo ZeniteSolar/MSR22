@@ -21,7 +21,7 @@
 // #define MA_PANEL_VOLTAGE        ma_adc0()
 // #define MA_PANEL_CURRENT        ma_adc1()
 #define MA_BATTERY_VOLTAGE      ma_adc0()
-// TODO Redefine after linearization process 
+// TODO Redefine after linearization process  
 #define MAXIMUM_BATTERY_VOLTAGE 46800 // 51,61 V  maximum value of voltage from battery in VOLTS
 #define MINIMUM_BATTERY_VOLTAGE 15000 // 15 V minimum value of voltage from battery in VOLTS
 #define CONVERSION_BATTERY_VOLTAGE_VALUE 1    //256 //400 
