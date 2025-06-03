@@ -2,7 +2,8 @@
 #include <math.h>
 
 uint32_t can_app_send_state_clk_div;
-uint32_t can_app_send_adc_clk_div;
+uint32_t can_app_send_adc_0_clk_div;
+uint32_t can_app_send_adc_1_clk_div;
 /**
  * @brief Prints a can message via usart
  */
@@ -42,12 +43,20 @@ inline void can_app_task(void)
         can_app_send_state_clk_div = 0;
     }
 
-    if(can_app_send_adc_clk_div++ >= CAN_APP_SEND_ADC_CLK_DIV){
+    if(can_app_send_adc_0_clk_div++ >= CAN_APP_SEND_ADC_CLK_DIV){
 #ifdef USART_ON
-        VERBOSE_MSG_CAN_APP(usart_send_string("adc msg was sent.\n"));
+        VERBOSE_MSG_CAN_APP(usart_send_string("adc0 msg was sent.\n"));
 #endif
-        can_app_send_adc();
-        can_app_send_adc_clk_div = 0;
+        can_app_send_adc_0();
+        can_app_send_adc_0_clk_div = 0;
+    }
+
+    if(can_app_send_adc_1_clk_div++ >= CAN_APP_SEND_ADC_CLK_DIV){
+#ifdef USART_ON
+        VERBOSE_MSG_CAN_APP(usart_send_string("adc1 msg was sent.\n"));
+#endif
+        can_app_send_adc_1();
+        can_app_send_adc_1_clk_div = 0;
     }
 
 }
@@ -64,30 +73,53 @@ inline void can_app_send_state(void)
     msg.data[CAN_MSG_GENERIC_STATE_ERROR_BYTE]      = error_flags.all;
 
     can_send_message(&msg);
+
 #ifdef VERBOSE_MSG_CAN_APP
     VERBOSE_MSG_CAN_APP(can_app_print_msg(&msg));
 #endif
 }
 
-inline void can_app_send_adc(void)
+inline void can_app_send_adc_0(void)
 {
     can_t msg;
     msg.id                                  = CAN_MSG_MSC19_1_ADC_ID;
     msg.length                              = CAN_MSG_MSC19_1_ADC_ID;
     msg.flags.rtr = 0;
 
-    msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_SELF;
-    msg.data[CAN_MSG_MSC19_1_ADC_MIN_L_BYTE]  = LOW(measurements.bat_voltage);
-    msg.data[CAN_MSG_MSC19_1_ADC_MIN_H_BYTE]  = HIGH(measurements.bat_voltage);
+    msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_MSC19_1;
+    msg.data[CAN_MSG_MSC19_1_ADC_MIN_L_BYTE]  = LOW(measurements.bat_voltage_0);
+    msg.data[CAN_MSG_MSC19_1_ADC_MIN_H_BYTE]  = HIGH(measurements.bat_voltage_0);
 
-    usart_send_uint16(measurements.bat_voltage);
+    can_send_message(&msg);
+    
+#ifdef VERBOSE_MSG_CAN_APP
+    VERBOSE_MSG_CAN_APP(can_app_print_msg(&msg));
+#endif
+
+}
+
+inline void can_app_send_adc_1(void)
+{
+    can_t msg;
+    msg.id                                  = CAN_MSG_MSC19_2_ADC_ID;
+    msg.length                              = CAN_MSG_MSC19_2_ADC_ID;
+    msg.flags.rtr = 0;
+
+    msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_MSC19_2;
+    msg.data[CAN_MSG_MSC19_2_ADC_MIN_L_BYTE]  = LOW(measurements.bat_voltage_1);
+    msg.data[CAN_MSG_MSC19_2_ADC_MIN_H_BYTE]  = HIGH(measurements.bat_voltage_1);
+
+    usart_send_uint16(measurements.bat_voltage_1);
     usart_send_char('\n');
+
+    can_send_message(&msg);
 
 #ifdef VERBOSE_MSG_CAN_APP
     VERBOSE_MSG_CAN_APP(can_app_print_msg(&msg));
 #endif
 
 }
+
 
 /**
  * @brief extracts the specific MIC19 STATE message
