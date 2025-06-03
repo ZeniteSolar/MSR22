@@ -186,6 +186,7 @@ inline void read_and_check_adcs(void) {
 inline void task_initializing(void) {
 #ifdef LED_ON
   set_led(LED1);
+  set_led(LED2);
 #endif
 
   set_machine_initial_state();
@@ -200,6 +201,7 @@ inline void task_initializing(void) {
 inline void task_idle(void) {
 #ifdef LED_ON
   if (led_clk_div++ >= IDLE_LED_CLK_DIV) {
+    set_led(LED2);
     cpl_led(LED1);
     led_clk_div = 0;
   }
@@ -214,6 +216,7 @@ inline void task_idle(void) {
 inline void task_running(void) {
 #ifdef LED_ON
   if (led_clk_div++ >= RUNNING_LED_CLK_DIV) {
+    clr_led(LED2);
     cpl_led(LED1);
     led_clk_div = 0;
   }
@@ -227,7 +230,7 @@ inline void task_error(void) {
 #ifdef LED_ON
   if (led_clk_div++ >= ERROR_LED_CLK_DIV) {
     cpl_led(LED2);
-    set_led(LED1);
+    // set_led(LED1);
     led_clk_div = 0;
   }
 #endif
