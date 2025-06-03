@@ -18,10 +18,12 @@
 
 // limits of values
 
-#define MA_BATTERY_VOLTAGE      ma_adc0()
+#define MA_BATTERY_VOLTAGE_0      ma_adc0()
+#define MA_BATTERY_VOLTAGE_1      ma_adc1()
+
 // TODO Redefine after linearization process  
-#define MAXIMUM_BATTERY_VOLTAGE 46800 // 51,61 V  maximum value of voltage from battery in VOLTS
-#define MINIMUM_BATTERY_VOLTAGE 15000 // 15 V minimum value of voltage from battery in VOLTS
+#define MAXIMUM_BATTERY_VOLTAGE 16000 // 16 V  maximum value of voltage from battery in VOLTS
+#define MINIMUM_BATTERY_VOLTAGE 10000 // 10 V minimum value of voltage from battery in VOLTS
 #define CONVERSION_BATTERY_VOLTAGE_VALUE 1    //256 //400 
 
 // PRINT INFOS CONSTANTS
@@ -74,15 +76,15 @@ typedef union error_flags{
 }error_flags_t;
 
 typedef struct measurements{
-    uint16_t    bat_voltage;       // average value of ADC0
-    uint16_t    other_meas;       // average value of ADC0
+    uint16_t    bat_voltage_0;       // average value of ADC0
+    uint16_t    bat_voltage_1;       // average value of ADC1
+    // uint16_t    other_meas;       // average value of ADC0
 }measurements_t;
 
 
 // machine checks
 void check_buffers(void);
 void check_battery_voltage(void);
-void reset_measurements(void);
 void read_and_check_adcs(void);
 
 // debug functions
