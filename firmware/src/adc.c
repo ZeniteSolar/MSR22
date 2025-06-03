@@ -17,9 +17,9 @@ volatile uint16_t adc_debug_clk_div = 0;
 
 // Coefficients for linearization, example coefficients
 static const int16_t adc0_a = 42;   // 0.04205947 * 100 ≈ 4
-static const int16_t adc0_b = 1;  // 0.12829264 * 100 ≈ 13
-static const int16_t adc1_a = 1;   
-static const int16_t adc1_b = 1;
+static const int16_t adc0_b = 77;  // 0.12829264 * 100 ≈ 13
+static const int16_t adc1_a = adc0_a;   
+static const int16_t adc1_b = adc0_b;
 
 // Define the linearization polynomial as a macro or function
 
@@ -38,7 +38,7 @@ void init_buffers(void)
 static inline uint16_t linearize_adc(uint16_t x, int16_t a, int16_t b) {
     uint16_t result;
 
-    result = a * x;
+    result = a * x + b;
 
     return result;
 }
@@ -62,11 +62,11 @@ uint16_t ma_adc0(void)
         uint16_t linearized_value = linearize_adc(raw_value, adc0_a, adc0_b);  // Apply polynomial
         sum += linearized_value;
     }
-    if(adc_debug_clk_div++ >= ADC_DEBUG_CLK_DIV/50){
-        usart_send_string("\ntestando SUM: ");
-        usart_send_uint16(sum);
-        adc_debug_clk_div = 0;
-    } 
+    // if(adc_debug_clk_div++ >= ADC_DEBUG_CLK_DIV/50){
+        // usart_send_string("\ntestando SUM: ");
+        // usart_send_uint16(sum);
+        // adc_debug_clk_div = 0;
+    // } 
     avg_adc0 = sum >> cbuf_adc0_SIZE_LOG2;
     return avg_adc0;
 }
