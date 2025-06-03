@@ -68,7 +68,7 @@ inline void can_app_send_state(void)
     msg.length                              = CAN_MSG_GENERIC_STATE_LENGTH;
     msg.flags.rtr = 0;
 
-    msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_SELF;
+    msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_MSC19_1;
     msg.data[CAN_MSG_GENERIC_STATE_STATE_BYTE]      = (uint8_t) state_machine;
     msg.data[CAN_MSG_GENERIC_STATE_ERROR_BYTE]      = error_flags.all;
 
@@ -108,9 +108,6 @@ inline void can_app_send_adc_1(void)
     msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_MSC19_2;
     msg.data[CAN_MSG_MSC19_2_ADC_MIN_L_BYTE]  = LOW(measurements.bat_voltage_1);
     msg.data[CAN_MSG_MSC19_2_ADC_MIN_H_BYTE]  = HIGH(measurements.bat_voltage_1);
-
-    usart_send_uint16(measurements.bat_voltage_1);
-    usart_send_char('\n');
 
     can_send_message(&msg);
 

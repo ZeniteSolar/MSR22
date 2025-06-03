@@ -18,7 +18,7 @@
 // CONFIGURACOES DE COMPILACAO
 //#define DEBUG_ON
 #define VERBOSE_ON
-//#define VERBOSE_ON_CAN_APP
+// #define VERBOSE_ON_CAN_APP
 #define VERBOSE_ON_MACHINE
 // #define VERBOSE_ON_ADC
 #define VERBOSE_ON_INIT
@@ -26,7 +26,7 @@
 
 // MODULES ACTIVATION
 #define USART_ON
-// #define CAN_ON
+#define CAN_ON
 //#define CAN_DEPENDENT
 #define ADC_ON
 #define MACHINE_ON
@@ -107,8 +107,15 @@
 
 #ifdef CAN_ON
 #define SPI_ON
-#define CAN_APP_SEND_STATE_FREQ     40//36000     //<! state msg frequency in Hz
-#define CAN_APP_SEND_ADC_FREQ       4//6000      //<! adc msg frequency in Hz
+#define CAN_APP_SEND_STATE_FREQ     10//36000     //<! state msg frequency in Hz
+#define CAN_APP_SEND_ADC_FREQ       50//6000      //<! adc msg frequency in Hz
+#if MACHINE_FREQUENCY % CAN_APP_SEND_STATE_FREQ != 0
+    #warning "CAN_APP_SEND_STATE_FREQ doesn't have a multiple equal to MACHINE_FREQUENCY, this frequency will be truncated"
+#endif
+
+#if MACHINE_FREQUENCY % CAN_APP_SEND_ADC_FREQ != 0
+    #warning "CAN_APP_SEND_ADC_FREQ doesn't have a multiple equal to MACHINE_FREQUENCY, this frequency will be truncated"
+#endif
 
 // CANBUS DEFINITONS
 // ----------------------------------------------------------------------------
