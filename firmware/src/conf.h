@@ -35,7 +35,7 @@
 #define SLEEP_ON
 #define PRINT_INFOS
 
-#define CAN_SIGNATURE_SELF                  CAN_SIGNATURE_MSC19_4
+#define CAN_SIGNATURE_SELF                  CAN_SIGNATURE_MSC19_1
 
 #ifdef ADC_ON
 // ADC CONFIGURATION
