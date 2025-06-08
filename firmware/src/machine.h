@@ -17,14 +17,9 @@
 #include "conf.h"
 
 // limits of values
-
-#define MA_BATTERY_VOLTAGE_0      ma_adc0()
-#define MA_BATTERY_VOLTAGE_1      ma_adc1()
-
 // TODO Redefine after linearization process  
 #define MAXIMUM_BATTERY_VOLTAGE 16000 // 16 V  maximum value of voltage from battery in VOLTS
 #define MINIMUM_BATTERY_VOLTAGE 10000 // 10 V minimum value of voltage from battery in VOLTS
-#define CONVERSION_BATTERY_VOLTAGE_VALUE 1    //256 //400 
 
 // PRINT INFOS CONSTANTS
 #define PRINT_INFOS_TIME        0.2 // seconds for half a period 
@@ -41,6 +36,9 @@
 
 #ifdef ADC_ON
 #include "adc.h"
+#define MA_BATTERY_VOLTAGE_0      ma_adc0()
+#define MA_BATTERY_VOLTAGE_1      ma_adc1()
+
 #endif
 #ifdef USART_ON
 #include "usart.h"

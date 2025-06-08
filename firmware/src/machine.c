@@ -157,9 +157,9 @@ inline void check_battery_voltage(void) // sem panel
 inline void read_and_check_adcs(void) {
 #ifdef ADC_ON
   measurements.bat_voltage_0 =
-      MA_BATTERY_VOLTAGE_0; //* CONVERSION_BATTERY_VOLTAGE_VALUE;
+      MA_BATTERY_VOLTAGE_0;
   measurements.bat_voltage_1 =
-      MA_BATTERY_VOLTAGE_1; //* CONVERSION_BATTERY_VOLTAGE_VALUE;
+      MA_BATTERY_VOLTAGE_1;
 
   switch (state_machine) {
   case STATE_INITIALIZING:
@@ -260,9 +260,6 @@ inline void task_error(void) {
     set_state_reset();
   }
 
-#ifdef LED_ON
-  cpl_led(LED2);
-#endif
   set_state_initializing();
 }
 
@@ -357,22 +354,4 @@ inline void machine_run(void) {
 /**
  * @brief ISR para ações de controle
  */
-ISR(TIMER2_COMPA_vect) {
-#ifdef MACHINE_CLK_DIVIDER_VALUE
-  if (machine_clk_divider++ == MACHINE_CLK_DIVIDER_VALUE) {
-    /*if(machine_clk){
-        for(;;){
-            pwm_reset();
-            VERBOSE_MSG_ERROR(if(machine_clk) usart_send_string("\nERROR: CLOCK
-    CONFLICT!!!\n"));
-        }
-    }*/
-    machine_clk = 1;
-    machine_clk_divider = 0;
-  }
-#else
-  // VERBOSE_MSG_ERROR(if(machine_clk) usart_send_string("\nERROR: CLOCK
-  // CONFLICT!!!\n"));
-  machine_clk = 1;
-#endif
-}
+ISR(TIMER2_COMPA_vect) { machine_clk = 1; }
