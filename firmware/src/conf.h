@@ -6,9 +6,9 @@
  * @brief General configuration of the system.
  *
  */
-#include "../lib/log2.h"
 #ifndef CONF_H
 #define CONF_H
+#include "../lib/log2.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL    //define a frequencia do microcontrolador - 16MHz
@@ -73,7 +73,6 @@
 #ifdef MACHINE_ON
 // ----> Cbuf used + not a power module ---> no need for even numbers between ADC and Machine frequencies
 // no need for clk divider 
-// #define MACHINE_CLK_DIVIDER_VALUE           ((uint64_t)(uint32_t)MACHINE_FREQUENCY*(uint32_t)ADC_AVG_SIZE_10)/(ADC_FREQUENCY)           //<! machine_run clock divider
 #define MACHINE_FREQUENCY                   100           //<! machine timer frequency in Hz
 #define MACHINE_TIMER_PRESCALER             1024          //<! machine timer prescaler
 #define MACHINE_TOP_CTC                     F_CPU/(MACHINE_TIMER_PRESCALER * 2UL * MACHINE_FREQUENCY) -1
