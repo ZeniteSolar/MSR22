@@ -83,12 +83,16 @@ inline void can_app_send_adc_0(void)
 {
     can_t msg;
     msg.id                                  = CAN_MSG_MSC19_1_ADC_ID;
-    msg.length                              = CAN_MSG_MSC19_1_ADC_ID;
+    msg.length                              = CAN_MSG_MSC19_1_ADC_LENGTH;
     msg.flags.rtr = 0;
 
     msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_MSC19_1;
-    msg.data[CAN_MSG_MSC19_1_ADC_MIN_L_BYTE]  = LOW(measurements.bat_voltage_0);
-    msg.data[CAN_MSG_MSC19_1_ADC_MIN_H_BYTE]  = HIGH(measurements.bat_voltage_0);
+    msg.data[CAN_MSG_MSC19_1_ADC_AVG_L_BYTE]  = LOW(measurements.bat_voltage_0);
+    msg.data[CAN_MSG_MSC19_1_ADC_AVG_H_BYTE]  = HIGH(measurements.bat_voltage_0);
+    msg.data[CAN_MSG_MSC19_1_ADC_MIN_L_BYTE] = 0; // TODO
+    msg.data[CAN_MSG_MSC19_1_ADC_MIN_H_BYTE] = 0; // TODO
+    msg.data[CAN_MSG_MSC19_1_ADC_MAX_L_BYTE] = 0; // TODO
+    msg.data[CAN_MSG_MSC19_1_ADC_MAX_H_BYTE] = 0; // TODO
 
     can_send_message(&msg);
     
@@ -102,12 +106,16 @@ inline void can_app_send_adc_1(void)
 {
     can_t msg;
     msg.id                                  = CAN_MSG_MSC19_2_ADC_ID;
-    msg.length                              = CAN_MSG_MSC19_2_ADC_ID;
+    msg.length                              = CAN_MSG_MSC19_2_ADC_LENGTH;
     msg.flags.rtr = 0;
 
     msg.data[CAN_MSG_GENERIC_STATE_SIGNATURE_BYTE]            = CAN_SIGNATURE_MSC19_2;
-    msg.data[CAN_MSG_MSC19_2_ADC_MIN_L_BYTE]  = LOW(measurements.bat_voltage_1);
-    msg.data[CAN_MSG_MSC19_2_ADC_MIN_H_BYTE]  = HIGH(measurements.bat_voltage_1);
+    msg.data[CAN_MSG_MSC19_2_ADC_AVG_L_BYTE]  = LOW(measurements.bat_voltage_1);
+    msg.data[CAN_MSG_MSC19_2_ADC_AVG_H_BYTE]  = HIGH(measurements.bat_voltage_1);
+    msg.data[CAN_MSG_MSC19_2_ADC_MIN_L_BYTE]  = 0; // TODO
+    msg.data[CAN_MSG_MSC19_2_ADC_MIN_H_BYTE]  = 0; // TODO
+    msg.data[CAN_MSG_MSC19_2_ADC_MAX_L_BYTE]  = 0; // TODO
+    msg.data[CAN_MSG_MSC19_2_ADC_MAX_H_BYTE]  = 0; // TODO
 
     can_send_message(&msg);
 
